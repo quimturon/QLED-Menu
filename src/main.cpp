@@ -79,7 +79,7 @@ uint8_t lastBri0;
 uint8_t lastBri1;
 int minBri = 5;
 int maxBri = 255;
-uint8_t briSteps = 25;
+uint8_t briSteps = 50;
 String nominalPreset[] = {"","","",""};
 
 String callPreset(int stripIndex, int presetIndex) {
@@ -88,13 +88,13 @@ String callPreset(int stripIndex, int presetIndex) {
         return "Rainbow";
     }else if (presetIndex == 2) {
         nominalPreset[stripIndex] = "Calid";
-        return "Warm";
+        return "Calid";
     }else if (presetIndex == 3) {
         nominalPreset[stripIndex] = "Blanc";
-        return "White";
+        return "Blanc";
     }else if (presetIndex == 4) {
         nominalPreset[stripIndex] = "Colorit";
-        return "Cycle";
+        return "Colorit";
     }else{
         nominalPreset[stripIndex] = "Off";
         return "Off";
@@ -295,6 +295,11 @@ void setup() {
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0,0);
+    display.dim(true);
+    display.display();
+    delay(100);
+    display.dim(false);
+    display.display();
     display.println("WIFI OK");
     display.display();
 
