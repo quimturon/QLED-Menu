@@ -1,9 +1,21 @@
 #include "leds.h"
+#include "espnow/espnow.h"
 #include <esp_now.h>
 
 #define NUM_STRIPS 2
 #define NUM_LEDS 42
 #define LED_PINS {19, 18}
+
+extern bool reescriure;
+extern uint8_t bri0;
+extern uint8_t bri1;
+extern uint8_t targetBri0;
+extern uint8_t targetBri1;
+extern uint8_t lastBri0;
+extern uint8_t lastBri1;
+extern int minBri;
+extern int maxBri;
+extern uint8_t briSteps;
 
 LEDStrip ledStrips[NUM_STRIPS] = {
     {Adafruit_NeoPixel(NUM_LEDS, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
@@ -80,71 +92,47 @@ void enviaBrillantor(int stripIndex) {
     Serial.printf("Brillantor enviada tira %d: %d\n", stripIndex, ledStrips[stripIndex].targetBrightness);
 }
 
-
-void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len){
-    String msg = String((char*)incomingData); msg.trim();
-    Serial.printf("📩 Rebut: %s\n",msg.c_str());
-    // totes les leds
-    if(msg=="toggle"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[0].targetBrightness = (ledStrips[0].targetBrightness>0)?0:150;
-        enviaBrillantor(0);
+void toggleTauleta() {
+    if(ledStrips[0].targetBrightness == 0) {
+            ledStrips[0].targetBrightness = lastBri0;
+    } else {
+        lastBri0 = ledStrips[0].targetBrightness;
+        ledStrips[0].targetBrightness = 0;
     }
-    else if(msg=="+bri"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[0].targetBrightness = min(ledStrips[0].targetBrightness+50,255);
-        enviaBrillantor(0);
+    reescriure = true;
+}
+void togglePrestatge() {
+    if(ledStrips[1].targetBrightness == 0) {
+        ledStrips[1].targetBrightness = lastBri1;
+    } else {
+        lastBri1 = ledStrips[1].targetBrightness;
+        ledStrips[1].targetBrightness = 0;
     }
-    else if(msg=="-bri"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[0].targetBrightness = max(ledStrips[0].targetBrightness-50,5);
-        enviaBrillantor(0);
-    }
-    else if(msg=="preset"){
-        for(int s=0;s<NUM_STRIPS;s++){
-            ledStrips[0].preset += 1;
-            if(ledStrips[0].preset>NUM_PRESETS) ledStrips[0].preset=1;
-        }
-        enviaBrillantor(1);
-    }else if(msg=="toggle"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[0].targetBrightness = (ledStrips[0].targetBrightness>0)?0:150;
-        enviaBrillantor(1);
-    }
-    // Leds 1
-    if(msg=="toggle0"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[s].targetBrightness = (ledStrips[s].targetBrightness>0)?0:150;
-        enviaBrillantor(0);
-    }
-    else if(msg=="+bri0"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[s].targetBrightness = min(ledStrips[s].targetBrightness+25,255);
-        enviaBrillantor(0);
-    }
-    else if(msg=="-bri0"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[s].targetBrightness = max(ledStrips[s].targetBrightness-25,5);
-        enviaBrillantor(0);
-    }
-    else if(msg=="preset0"){
-        for(int s=0;s<NUM_STRIPS;s++){
-            ledStrips[s].preset += 1;
-            if(ledStrips[s].preset>NUM_PRESETS) ledStrips[s].preset=1;
-        }
-        enviaBrillantor(1);
-    // Leds 2
-    }else if(msg=="toggle1"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[s].targetBrightness = (ledStrips[s].targetBrightness>0)?0:150;
-        enviaBrillantor(1);
-    }
-    else if(msg=="+bri1"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[s].targetBrightness = min(ledStrips[s].targetBrightness+25,255);
-        enviaBrillantor(1);
-    }
-    else if(msg=="-bri1"){
-        for(int s=0;s<NUM_STRIPS;s++) ledStrips[s].targetBrightness = max(ledStrips[s].targetBrightness-25,5);
-        enviaBrillantor(1);
-    }
-    else if(msg=="preset1"){
-        for(int s=0;s<NUM_STRIPS;s++){
-            ledStrips[s].preset += 1;
-            if(ledStrips[s].preset>NUM_PRESETS) ledStrips[s].preset=1;
-        }
-        enviaBrillantor(1);
-    }
+    reescriure = true;
+}
+void briPlusTauleta() {
+    ledStrips[0].targetBrightness = min(ledStrips[0].targetBrightness + briSteps, maxBri);
+    reescriure = true;
+}
+void briMinusTauleta() {
+    ledStrips[0].targetBrightness = max(ledStrips[0].targetBrightness - briSteps, 5);
+    reescriure = true;
+}
+void briPlusPrestatge() {
+    ledStrips[1].targetBrightness = min(ledStrips[1].targetBrightness + briSteps, maxBri);
+    reescriure = true;
+}
+void briMinusPrestatge() {
+    ledStrips[1].targetBrightness = max(ledStrips[1].targetBrightness - briSteps, 5);
+    reescriure = true;
+}
+void presetTauleta() {
+    ledStrips[0].preset += 1;
+    if(ledStrips[0].preset > 4) ledStrips[0].preset = 1;
+    reescriure = true;
+}
+void presetPrestatge() {
+    ledStrips[1].preset += 1;
+    if(ledStrips[1].preset > 4) ledStrips[1].preset = 1;
     reescriure = true;
 }

@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <SPI.h>
 //llibreries de wifi i dades
+#include "esp_wifi.h"
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
@@ -34,6 +35,7 @@
 #include "wifi/wifi_manager.h"
 #include "neopixel/leds.h"
 #include "ntp/ntp.h"
+#include "espnow/espnow.h"
 
 // ================= MENU SETTING =================
 int menu = 0;
@@ -42,6 +44,8 @@ DateTime lastUpdateOTA;
 DateTime lastUpdateRTC;
 
 // --- OLED --- 
+String debugMsg = "";
+String debugMsg2 = "";
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
@@ -58,8 +62,8 @@ String FW_VERSION;
 String NEW_VERSION;
 bool otaInProgress = false;
 int needOTA = 0;
-const char* releasesAPI  = "https://api.github.com/repos/quimturon/habitacio/releases/latest";
-const char* firmwareURL = "https://github.com/quimturon/habitacio/releases/latest/download/firmware.bin";
+const char* releasesAPI  = "https://api.github.com/repos/quimturon/QLED-Menu/releases/latest";
+const char* firmwareURL = "https://github.com/quimturon/QLED-Menu/releases/latest/download/firmware.bin";
 
 // --- EEPROM ---
 #define EEPROM_SIZE 160
@@ -73,10 +77,16 @@ uint8_t controladorAdress[] = {0x84, 0x1F, 0xE8, 0x69, 0x3B, 0x9C};
 // --- ledStrips ---
 uint8_t bri0;
 uint8_t bri1;
+uint8_t bri2;
+uint8_t bri3;
 uint8_t targetBri0;
 uint8_t targetBri1;
+uint8_t targetBri2;
+uint8_t targetBri3;
 uint8_t lastBri0;
 uint8_t lastBri1;
+uint8_t lastBri2;
+uint8_t lastBri3;
 int minBri = 5;
 int maxBri = 255;
 uint8_t briSteps = 50;
@@ -250,9 +260,11 @@ void updateOLED(char* buf) {
   display.setTextSize(1); display.setTextColor(SSD1306_WHITE); display.setFont(&FreeSans18pt7b);
   display.setCursor(16, display.height()/2+14); display.print(buf);
   // RTC
-  display.setCursor(SCREEN_WIDTH-6*6, SCREEN_HEIGHT-8);
-  display.display();
+  display.setCursor(0, 10);
   display.setFont();
+  display.println(debugMsg);
+  display.println(debugMsg2);
+  display.display();
 }
 
 void debugPrint(const String &msg){
@@ -292,6 +304,29 @@ void setup() {
       ESP.restart();  // o deixa'l offline si prefereixes
     }
 
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("❌ Error inicialitzant ESP-NOW");
+        display.println("ESP-NOW ERROR");
+        display.display();
+        while (true) delay(100);
+    }
+    esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE); // 1 = canal que vols per ESP-NOW
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, controladorAdress, 6);
+    peerInfo.channel = 1;
+    peerInfo.encrypt = false;
+
+    esp_now_del_peer(controladorAdress);  // elimina si existeix
+    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+        Serial.println("❌ Error afegint peer");
+    } else {
+        Serial.println("✅ Peer afegit correctament");
+    }
+    esp_now_register_recv_cb(onDataRecv);
+    Serial.println("✅ ESP-NOW inicialitzat");
+    Serial.print("Canal: ");
+    Serial.println(WiFi.channel());
+
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0,0);
@@ -319,18 +354,7 @@ void setup() {
         NULL,
         0
     );
-
-    esp_now_peer_info_t peerInfo = {};
-    memcpy(peerInfo.peer_addr, controladorAdress, 6);
-    peerInfo.channel = 0;
-    peerInfo.encrypt = false;
-
-    if (!esp_now_is_peer_exist(controladorAdress)) {
-    if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-        Serial.println("❌ Error afegint el peer");
-        return;
-    }
-  }
+    Serial.println("Tasca LED creada");
 
     // LCDs
     lcd2004.init(); 
@@ -342,31 +366,8 @@ void setup() {
     if(display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
         display.clearDisplay(); display.display();
     }
-
-    // Configura pins A/B dels encoders 3 i 4
-    pinMode(ENC3_A, INPUT_PULLUP); pinMode(ENC3_B, INPUT_PULLUP);
-    pinMode(ENC4_A, INPUT_PULLUP); pinMode(ENC4_B, INPUT_PULLUP);
-
-    // Encoders
-    enc1.begin(); enc1.setup(readEncoder0); enc1.setAcceleration(0);
-    enc2.begin(); enc2.setup(readEncoder1); enc2.setAcceleration(0);
-    enc3.begin(); enc3.setup(readEncoder2); enc3.setAcceleration(0);
-    enc4.begin(); enc4.setup(readEncoder3); enc4.setAcceleration(0);
-    enc5.begin(); enc5.setup(readEncoder4); enc5.setAcceleration(0);
-
-    // Botons extra
-    pinMode(BUTTON1, INPUT_PULLUP);
-    pinMode(BUTTON2, INPUT_PULLUP);
-    pinMode(BUTTON3, INPUT_PULLUP);
-    pinMode(BUTTON4, INPUT_PULLUP);
-    pinMode(BUTTON5, INPUT_PULLUP);
-
-    pinMode(ENC1_BTN, INPUT_PULLUP);
-    pinMode(ENC2_BTN, INPUT_PULLUP);
-    pinMode(ENC3_BTN, INPUT_PULLUP);
-    pinMode(ENC4_BTN, INPUT_PULLUP);
-    pinMode(ENC5_BTN, INPUT_PULLUP);
-
+    Serial.println("Pantalles inicialitzades");
+    
     // RTC
     if(!rtc.begin()) debugPrint("No s'ha trobat el RTC!");
     ntpInit(
@@ -374,13 +375,37 @@ void setup() {
         3600,   // GMT+1
         3600    // Horari d'estiu
     );
-
+    Serial.println("Sincronitzat RTC amb NTP");
+    
+    // Configura pins A/B dels encoders 3 i 4
+    pinMode(ENC3_A, INPUT_PULLUP); pinMode(ENC3_B, INPUT_PULLUP);
+    pinMode(ENC4_A, INPUT_PULLUP); pinMode(ENC4_B, INPUT_PULLUP);
+    
+    // Encoders
+    enc1.begin(); enc1.setup(readEncoder0); enc1.setAcceleration(0);
+    enc2.begin(); enc2.setup(readEncoder1); enc2.setAcceleration(0);
+    enc3.begin(); enc3.setup(readEncoder2); enc3.setAcceleration(0);
+    enc4.begin(); enc4.setup(readEncoder3); enc4.setAcceleration(0);
+    enc5.begin(); enc5.setup(readEncoder4); enc5.setAcceleration(0);
+    
+    // Botons extra
+    pinMode(BUTTON1, INPUT_PULLUP);
+    pinMode(BUTTON2, INPUT_PULLUP);
+    pinMode(BUTTON3, INPUT_PULLUP);
+    pinMode(BUTTON4, INPUT_PULLUP);
+    pinMode(BUTTON5, INPUT_PULLUP);
+    
+    pinMode(ENC1_BTN, INPUT_PULLUP);
+    pinMode(ENC2_BTN, INPUT_PULLUP);
+    pinMode(ENC3_BTN, INPUT_PULLUP);
+    pinMode(ENC4_BTN, INPUT_PULLUP);
+    pinMode(ENC5_BTN, INPUT_PULLUP);
 }
 
 // --- Loop ---
 void loop() {
     ensureWiFi();
-
+    
     // --- RTC ---
     DateTime now = rtc.now();
     char buf[9]; snprintf(buf,sizeof(buf),"%02d:%02d", now.hour(), now.minute());
@@ -498,9 +523,9 @@ void loop() {
             // Acció firmware
         }else
         if (menu == 1) {
-            // Acció llums
-        }else
-        if (menu == 2) {
+            debugMsg = "Enviant togglePrestatge...";
+            esp_now_send(controladorAdress, (uint8_t*)"togglePrestatge", strlen("togglePrestatge")+1);
+        }else if (menu == 2) {
             // Acció rtc
         }
     }
@@ -511,7 +536,8 @@ void loop() {
             // Acció firmware
         }else
         if (menu == 1) {
-            // Acció llums
+            debugMsg = "Enviant toggleTauleta...";
+            esp_now_send(controladorAdress, (uint8_t*)"toggleTauleta", strlen("toggleTauleta")+1);
         }else
         if (menu == 2) {
             // Acció rtc
@@ -553,7 +579,7 @@ void loop() {
     lastButtonState8 = buttonState8;
     lastButtonState9 = buttonState9;
     lastButtonState10 = buttonState10;
-
+    
     updateOLED(buf);
     if (reescriure) {
         updateLCD2004(menu, menuIndex);
