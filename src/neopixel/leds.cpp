@@ -6,8 +6,8 @@
 #define LED_PINS {19, 18}
 
 LEDStrip ledStrips[NUM_STRIPS] = {
-    {Adafruit_NeoPixel(NUM_LEDS, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
-    {Adafruit_NeoPixel(100, 18, NEO_GRB + NEO_KHZ800), 255, 255, 1}
+    {Adafruit_NeoPixel(250, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
+    {Adafruit_NeoPixel(250, 18, NEO_GRB + NEO_KHZ800), 255, 255, 1}
 };
 
 void setupLEDs() {
