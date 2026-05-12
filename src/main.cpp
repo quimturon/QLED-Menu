@@ -72,7 +72,7 @@ const char* firmwareURL = "https://github.com/quimturon/QLED-Menu/releases/lates
 #define VERSION_ADDR 128  // Offset firmware
 
 // --- espNOW ---
-uint8_t controladorAdress[] = {0x84, 0x1F, 0xE8, 0x69, 0x3B, 0x9C};
+uint8_t controladorAdress[] = {0x70, 0x4B, 0xCA, 0x83, 0x4A, 0x20};
 
 // --- ledStrips ---
 uint8_t bri0;
