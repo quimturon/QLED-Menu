@@ -81,7 +81,7 @@ void LEDTask(void *pvParameters) {
 
 // Funcions enviaBrillantor i onDataRecv: pots actualitzar-les per enviar/recebre info de totes les tiras
 void enviaBrillantor(int stripIndex) {
-    uint8_t controladorAdress[] = {0x80, 0xF3, 0xDA, 0x65, 0x5C, 0xB8};
+    uint8_t controladorAdress[] = {0x84, 0x1F, 0xE8, 0x69, 0x3B, 0x9C};
 
     if(stripIndex < 0 || stripIndex >= NUM_STRIPS) return;
 
