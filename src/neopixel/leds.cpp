@@ -18,7 +18,7 @@ extern int maxBri;
 extern uint8_t briSteps;
 
 LEDStrip ledStrips[NUM_STRIPS] = {
-    {Adafruit_NeoPixel(78, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
+    {Adafruit_NeoPixel(35, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
     {Adafruit_NeoPixel(78, 18, NEO_GRB + NEO_KHZ800), 255, 255, 1}
 };
 
