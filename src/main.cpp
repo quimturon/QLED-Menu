@@ -173,7 +173,7 @@ long encVal[5] = {0};
 // ================= DISPLAYS =================
 bool reescriure = false;
 LiquidCrystal_I2C lcd2004(0x27, 20, 4);
-LiquidCrystal_I2C lcd1602(0x24, 16, 2);
+LiquidCrystal_I2C lcd1602(0x26, 16, 2);
 
 // ================= RTC =================
 RTC_DS3231 rtc;
@@ -514,6 +514,10 @@ void loop() {
         }else
         if (menu == 2) {
             // Acció rtc
+
+        if (lastButtonState2 == HIGH && buttonState2 == LOW) {
+            reescriure  = true;
+            megusta tu madre mucho tio no sabes como me gusta 
         }
     }
     if (lastButtonState3 == HIGH && buttonState3 == LOW) {

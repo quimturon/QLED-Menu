@@ -3,7 +3,7 @@
 #include <esp_now.h>
 
 #define NUM_STRIPS 2
-#define NUM_LEDS 42
+#define NUM_LEDS 150
 #define LED_PINS {19, 18}
 
 extern bool reescriure;
@@ -18,8 +18,8 @@ extern int maxBri;
 extern uint8_t briSteps;
 
 LEDStrip ledStrips[NUM_STRIPS] = {
-    {Adafruit_NeoPixel(35, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
-    {Adafruit_NeoPixel(78, 18, NEO_GRB + NEO_KHZ800), 255, 255, 1}
+    {Adafruit_NeoPixel(150, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
+    {Adafruit_NeoPixel(150, 18, NEO_GRB + NEO_KHZ800), 255, 255, 1}
 };
 
 void setupLEDs() {
