@@ -517,7 +517,6 @@ void loop() {
 
         if (lastButtonState2 == HIGH && buttonState2 == LOW) {
             reescriure  = true;
-            megusta tu madre mucho tio no sabes como me gusta 
         }
     }
     if (lastButtonState3 == HIGH && buttonState3 == LOW) {
@@ -590,4 +589,5 @@ void loop() {
         updateLCD1602(menu, menuIndex);
         reescriure = false;
     }
+}
 }
