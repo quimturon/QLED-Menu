@@ -33,6 +33,7 @@ void onDataRecv(const uint8_t *mac,
     msg.trim();
 
     Serial.printf("📩 ESP-NOW rebut: %s\n", msg.c_str());
+    notifyLCDActivity();
 
     // ===============================
     // COMANDES GLOBALS

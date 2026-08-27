@@ -309,6 +309,12 @@ long encVal[5] = {
 
 bool reescriure = false;
 
+const unsigned long LCD_ACTIVE_TIMEOUT = 60000UL;
+const unsigned long LCD_ALL_OFF_TIMEOUT = 10000UL;
+bool lcdBacklightOn = true;
+unsigned long lastLCDActivity = 0;
+volatile bool lcdActivityPending = false;
+
 LiquidCrystal_I2C lcd2004(0x27, 20, 4);
 LiquidCrystal_I2C lcd1602(0x26, 16, 2);
 
@@ -330,6 +336,8 @@ void updateLCD2004(int menu, int menuIndex);
 void updateLCD1602(int menu, int menuIndex);
 void updateOLED(char* buf);
 void debugPrint(const String &msg);
+void notifyLCDActivity();
+void updateLCDBacklight();
 
 
 // ========================================================
@@ -361,7 +369,49 @@ void IRAM_ATTR readEncoder4() {
 // ================= LCD 2004 =============================
 // ========================================================
 
+void notifyLCDActivity() {
+    lcdActivityPending = true;
+}
+
+void wakeLCDBacklight() {
+    wakeLCDBacklight();
+    lcdBacklightOn = true;
+    lastLCDActivity = millis();
+}
+
+bool areAllLightsOff() {
+    for (int stripIndex = 0; stripIndex < NUM_STRIPS; stripIndex++) {
+        if (ledStrips[stripIndex].targetBrightness != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void updateLCDBacklight() {
+    if (lcdActivityPending) {
+        lcdActivityPending = false;
+        wakeLCDBacklight();
+    }
+
+    unsigned long timeout = areAllLightsOff()
+        ? LCD_ALL_OFF_TIMEOUT
+        : LCD_ACTIVE_TIMEOUT;
+
+    if (
+        lcdBacklightOn &&
+        millis() - lastLCDActivity >= timeout
+    ) {
+        lcd2004.noBacklight();
+        lcd1602.noBacklight();
+        lcdBacklightOn = false;
+    }
+}
+
 void updateLCD2004(int menu, int menuIndex) {
+
+    notifyLCDActivity();
 
     lcd2004.clear();
 
@@ -475,6 +525,8 @@ void updateLCD2004(int menu, int menuIndex) {
 
 void updateLCD1602(int menu, int menuIndex) {
 
+    notifyLCDActivity();
+
     lcd1602.clear();
 
     if (menu == 0) {
@@ -531,6 +583,7 @@ void updateOLED(char* buf) {
 
 void debugPrint(const String &msg) {
 
+    notifyLCDActivity();
     Serial.println(msg);
 
     display.setCursor(
@@ -928,6 +981,8 @@ void loop() {
 
     if (enc1.encoderChanged()) {
 
+        encoderMoved = true;
+
         encVal[0] =
             enc1.readEncoder();
 
@@ -968,6 +1023,8 @@ void loop() {
     // ----------------------------------------------------
 
     if (enc2.encoderChanged()) {
+
+        encoderMoved = true;
 
         encVal[1] =
             enc2.readEncoder();
@@ -1068,6 +1125,21 @@ void loop() {
 
     // ENC5 no té botó
     buttonState10 = HIGH;
+
+    bool buttonPressed =
+        (lastButtonState1 == HIGH && buttonState1 == LOW) ||
+        (lastButtonState2 == HIGH && buttonState2 == LOW) ||
+        (lastButtonState3 == HIGH && buttonState3 == LOW) ||
+        (lastButtonState4 == HIGH && buttonState4 == LOW) ||
+        (lastButtonState5 == HIGH && buttonState5 == LOW) ||
+        (lastButtonState6 == HIGH && buttonState6 == LOW) ||
+        (lastButtonState7 == HIGH && buttonState7 == LOW) ||
+        (lastButtonState8 == HIGH && buttonState8 == LOW) ||
+        (lastButtonState9 == HIGH && buttonState9 == LOW);
+
+    if (encoderMoved || buttonPressed) {
+        notifyLCDActivity();
+    }
 
 
     // ====================================================
@@ -1502,4 +1574,6 @@ void loop() {
 
         reescriure = false;
     }
+
+    updateLCDBacklight();
 }
