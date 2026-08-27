@@ -374,7 +374,8 @@ void notifyLCDActivity() {
 }
 
 void wakeLCDBacklight() {
-    wakeLCDBacklight();
+    lcd2004.backlight();
+    lcd1602.backlight();
     lcdBacklightOn = true;
     lastLCDActivity = millis();
 }
@@ -802,8 +803,7 @@ void setup() {
     lcd2004.init();
     lcd1602.init();
 
-    lcd2004.backlight();
-    lcd1602.backlight();
+    wakeLCDBacklight();
 
 
     // ----------------------------------------------------

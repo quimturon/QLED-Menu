@@ -2,7 +2,7 @@
 #include "espnow/espnow.h"
 #include <esp_now.h>
 
-#define NUM_STRIPS 2
+const int NUM_STRIPS = 2;
 #define NUM_LEDS 150
 #define LED_PINS {19, 18}
 
