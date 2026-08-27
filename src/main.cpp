@@ -936,6 +936,12 @@ void loop() {
 
     processEspNowMessages();
 
+    static unsigned long lastStateSent = 0;
+    if (millis() - lastStateSent >= 30000UL) {
+        lastStateSent = millis();
+        sendLedState();
+    }
+
     ensureWiFi();
 
 

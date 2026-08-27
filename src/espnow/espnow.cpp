@@ -1,5 +1,6 @@
 #include "espnow/espnow.h"
 #include "neopixel/leds.h"   // 👈 aquí cridem les funcions dels LEDs
+#include <RTClib.h>
 
 extern String debugMsg;
 extern String debugMsg2;
@@ -11,6 +12,7 @@ extern uint8_t targetBri0;
 extern uint8_t targetBri1;
 extern uint8_t briSteps;
 extern uint8_t controladorAdress[];
+extern RTC_DS3231 rtc;
 
 uint8_t remotePreset0 = 2;
 uint8_t remotePreset1 = 2;
@@ -32,10 +34,12 @@ void sendMessage(const uint8_t *mac, const char *msg) {
 
 void sendLedState() {
     char state[80];
-    snprintf(state, sizeof(state), "STATE,%u,%u,%u,%u,%u,%u,%u,%u",
+    DateTime now = rtc.now();
+    snprintf(state, sizeof(state), "STATE,%u,%u,%u,%u,%u,%u,%u,%u,%02u:%02u",
              ledStrips[0].targetBrightness, ledStrips[0].preset,
              ledStrips[1].targetBrightness, ledStrips[1].preset,
-             bri0, remotePreset0, bri1, remotePreset1);
+             bri0, remotePreset0, bri1, remotePreset1,
+             now.hour(), now.minute());
     esp_now_send(controladorAdress, (const uint8_t *)state, strlen(state) + 1);
 }
 
