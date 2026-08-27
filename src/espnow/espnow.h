@@ -10,6 +10,8 @@
 // Enviar missatge de text (compatibilitat amb el que ja tens)
 void sendMessage(const uint8_t *mac, const char *msg);
 
+void sendLedState();
+
 // Inicialitza la cua i registra el receptor d'ESP-NOW.
 void setupEspNowReceiver();
 

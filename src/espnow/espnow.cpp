@@ -10,6 +10,10 @@ extern uint8_t bri1;
 extern uint8_t targetBri0;
 extern uint8_t targetBri1;
 extern uint8_t briSteps;
+extern uint8_t controladorAdress[];
+
+uint8_t remotePreset0 = 2;
+uint8_t remotePreset1 = 2;
 
 namespace {
 constexpr size_t MAX_ESPNOW_MESSAGE = 64;
@@ -24,6 +28,15 @@ QueueHandle_t messageQueue = nullptr;
 void sendMessage(const uint8_t *mac, const char *msg) {
     esp_now_send(mac, (const uint8_t *)msg, strlen(msg) + 1);
     Serial.printf("📤 ESP-NOW enviat: %s\n", msg);
+}
+
+void sendLedState() {
+    char state[80];
+    snprintf(state, sizeof(state), "STATE,%u,%u,%u,%u,%u,%u,%u,%u",
+             ledStrips[0].targetBrightness, ledStrips[0].preset,
+             ledStrips[1].targetBrightness, ledStrips[1].preset,
+             bri0, remotePreset0, bri1, remotePreset1);
+    esp_now_send(controladorAdress, (const uint8_t *)state, strlen(state) + 1);
 }
 
 void setupEspNowReceiver() {
@@ -64,6 +77,19 @@ void processEspNowMessages() {
     while (xQueueReceive(messageQueue, &incomingMessage, 0) == pdTRUE) {
         String msg = incomingMessage.text;
         msg.trim();
+
+        if (msg.startsWith("STATE,")) {
+            int values[8];
+            if (sscanf(msg.c_str(), "STATE,%d,%d,%d,%d,%d,%d,%d,%d",
+                       &values[0], &values[1], &values[2], &values[3],
+                       &values[4], &values[5], &values[6], &values[7]) == 8) {
+                bri0 = constrain(values[4], 0, 255);
+                remotePreset0 = constrain(values[5], 1, 4);
+                bri1 = constrain(values[6], 0, 255);
+                remotePreset1 = constrain(values[7], 1, 4);
+            }
+            continue;
+        }
 
         Serial.printf("📩 ESP-NOW rebut: %s\n", msg.c_str());
         notifyLCDActivity();
@@ -155,6 +181,7 @@ void processEspNowMessages() {
     else {
         Serial.println("⚠️ Comanda desconeguda");
     }
+        sendLedState();
     }
 }
 
