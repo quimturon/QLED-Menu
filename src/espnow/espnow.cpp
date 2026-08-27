@@ -11,9 +11,29 @@ extern uint8_t targetBri0;
 extern uint8_t targetBri1;
 extern uint8_t briSteps;
 
+namespace {
+constexpr size_t MAX_ESPNOW_MESSAGE = 64;
+
+struct EspNowMessage {
+    char text[MAX_ESPNOW_MESSAGE];
+};
+
+QueueHandle_t messageQueue = nullptr;
+}
+
 void sendMessage(const uint8_t *mac, const char *msg) {
     esp_now_send(mac, (const uint8_t *)msg, strlen(msg) + 1);
     Serial.printf("📤 ESP-NOW enviat: %s\n", msg);
+}
+
+void setupEspNowReceiver() {
+    messageQueue = xQueueCreate(16, sizeof(EspNowMessage));
+    if (messageQueue == nullptr) {
+        Serial.println("ERROR creant la cua d'ESP-NOW");
+        return;
+    }
+
+    esp_now_register_recv_cb(onDataRecv);
 }
 
 // ===============================
@@ -23,26 +43,39 @@ void onDataRecv(const uint8_t *mac,
                       const uint8_t *incomingData,
                       int len) {
 
-    // 🔴 IMPORTANT: assumim STRING només si acaba amb \0
-    if (incomingData[len - 1] != '\0') {
-        Serial.println("⚠️ Paquet no-string rebut (ignorat)");
+    if (messageQueue == nullptr || incomingData == nullptr || len <= 0) {
         return;
     }
 
-    String msg = String((char *)incomingData);
-    msg.trim();
+    EspNowMessage message = {};
+    size_t copyLength = min(static_cast<size_t>(len), MAX_ESPNOW_MESSAGE - 1);
+    memcpy(message.text, incomingData, copyLength);
+    message.text[copyLength] = '\0';
 
-    Serial.printf("📩 ESP-NOW rebut: %s\n", msg.c_str());
-    notifyLCDActivity();
+    xQueueSend(messageQueue, &message, 0);
+}
 
-    // ===============================
-    // COMANDES GLOBALS
-    // ===============================
-    if (msg == "toggleAll") {
-        toggleTauleta();
-        togglePrestatge();
-        debugMsg2 = "Rebut toggleAll...";
+void processEspNowMessages() {
+    if (messageQueue == nullptr) {
+        return;
     }
+
+    EspNowMessage incomingMessage;
+    while (xQueueReceive(messageQueue, &incomingMessage, 0) == pdTRUE) {
+        String msg = incomingMessage.text;
+        msg.trim();
+
+        Serial.printf("📩 ESP-NOW rebut: %s\n", msg.c_str());
+        notifyLCDActivity();
+
+        // ===============================
+        // COMANDES GLOBALS
+        // ===============================
+        if (msg == "toggleAll") {
+            toggleTauleta();
+            togglePrestatge();
+            debugMsg2 = "Rebut toggleAll...";
+        }
     else if (msg == "+briAll") {
         briPlusTauleta();
         briPlusPrestatge();
@@ -121,6 +154,7 @@ void onDataRecv(const uint8_t *mac,
 
     else {
         Serial.println("⚠️ Comanda desconeguda");
+    }
     }
 }
 

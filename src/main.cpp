@@ -730,9 +730,7 @@ void setup() {
     }
 
 
-    esp_now_register_recv_cb(
-        onDataRecv
-    );
+    setupEspNowReceiver();
 
 
     Serial.println(
@@ -935,6 +933,8 @@ void setup() {
 // ========================================================
 
 void loop() {
+
+    processEspNowMessages();
 
     ensureWiFi();
 

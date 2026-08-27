@@ -10,6 +10,12 @@
 // Enviar missatge de text (compatibilitat amb el que ja tens)
 void sendMessage(const uint8_t *mac, const char *msg);
 
+// Inicialitza la cua i registra el receptor d'ESP-NOW.
+void setupEspNowReceiver();
+
+// Processa els missatges fora de la tasca Wi-Fi.
+void processEspNowMessages();
+
 // Notify the main loop that a received message is user-visible activity.
 void notifyLCDActivity();
 

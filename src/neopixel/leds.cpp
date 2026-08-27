@@ -32,12 +32,6 @@ void setupLEDs() {
         ledStrips[i].preset = 2;
     }
 
-    if (esp_now_init() != ESP_OK) {
-        Serial.println("❌ Error inicialitzant ESP-NOW");
-        return;
-    }
-
-    esp_now_register_recv_cb(onDataRecv);
 }
 
 void LEDTask(void *pvParameters) {
