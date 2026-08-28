@@ -2,12 +2,12 @@
 #include "espnow/espnow.h"
 #include <esp_now.h>
 
-const int NUM_STRIPS = 2;
-#define NUM_LEDS 71
+const int NUM_STRIPS = 4;
+#define NUM_LEDS 69
 #define PARET_START 0
-#define PARET_END 35
-#define PRESTATGE_START 36
-#define PRESTATGE_END 70
+#define PARET_END 32
+#define PRESTATGE_START 33
+#define PRESTATGE_END 68
 
 extern bool reescriure;
 extern uint8_t bri0;
@@ -21,6 +21,8 @@ extern int maxBri;
 extern uint8_t briSteps;
 
 LEDStrip ledStrips[NUM_STRIPS] = {
+    {0, 0, 2, 50},
+    {0, 0, 2, 50},
     {0, 0, 2, 50},
     {0, 0, 2, 50}
 };

@@ -149,6 +149,9 @@ int maxBri = 255;
 
 uint8_t briSteps = 50;
 
+extern uint8_t remotePreset0;
+extern uint8_t remotePreset1;
+
 String nominalPreset[] = {
     "",
     "",
@@ -457,26 +460,34 @@ void updateLCD2004(int menu, int menuIndex) {
 
         lcd2004.setCursor(0,0);
         lcd2004.printf(
-            "Paret %3d%%",
-            ledStrips[0].targetBrightness
+            "%-9s%3d %s",
+            "Paret",
+            ledStrips[0].targetBrightness,
+            callPreset(0, ledStrips[0].preset)
         );
 
         lcd2004.setCursor(0,1);
         lcd2004.printf(
-            "Efecte: %s",
-            callPreset(0, ledStrips[0].preset)
+            "%-9s%3d %s",
+            "Prestatge",
+            ledStrips[1].targetBrightness,
+            callPreset(1, ledStrips[1].preset)
         );
 
         lcd2004.setCursor(0,2);
         lcd2004.printf(
-            "Prestatge %3d%%",
-            ledStrips[1].targetBrightness
+            "%-9s%3d %s",
+            "Tauleta",
+            bri0,
+            callPreset(2, remotePreset0)
         );
 
         lcd2004.setCursor(0,3);
         lcd2004.printf(
-            "Efecte: %s",
-            callPreset(1, ledStrips[1].preset)
+            "%-9s%3d %s",
+            "General",
+            bri1,
+            callPreset(3, remotePreset1)
         );
 
     } else if (menu == 2) {
