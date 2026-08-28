@@ -10,7 +10,6 @@
 
 // Estrcutura de tira
 struct LEDStrip {
-    Adafruit_NeoPixel strip;
     uint8_t brightness;
     uint8_t targetBrightness;
     uint8_t preset;
@@ -27,13 +26,13 @@ void LEDTask(void *pvParameters);
 void enviaBrillantor(int stripIndex = 0);
 void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len);
 // Funcions de control de LEDs
-void toggleTauleta();
+void toggleParet();
 void togglePrestatge();
-void briPlusTauleta();
-void briMinusTauleta();
+void briPlusParet();
+void briMinusParet();
 void briPlusPrestatge();
 void briMinusPrestatge();
-void presetTauleta();
+void presetParet();
 void presetPrestatge();
 
 #endif

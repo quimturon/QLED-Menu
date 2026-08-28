@@ -411,9 +411,6 @@ void updateLCDBacklight() {
 }
 
 void updateLCD2004(int menu, int menuIndex) {
-
-    notifyLCDActivity();
-
     lcd2004.clear();
 
     if (menu == 0) {
@@ -460,30 +457,15 @@ void updateLCD2004(int menu, int menuIndex) {
 
         lcd2004.setCursor(0,0);
         lcd2004.printf(
-            "Despatx %3d%% %s",
+            "Paret %3d%% %s",
             ledStrips[0].targetBrightness,
             callPreset(0, ledStrips[0].preset)
         );
 
         lcd2004.setCursor(0,1);
         lcd2004.printf(
-            "Paret   %3d%% %s",
-            ledStrips[1].targetBrightness,
-            callPreset(1, ledStrips[1].preset)
-        );
-
-        lcd2004.setCursor(0,2);
-        lcd2004.printf(
-            "Tauleta %3d%% %s",
-            ledStrips[2].targetBrightness,
-            callPreset(2, ledStrips[2].preset)
-        );
-
-        lcd2004.setCursor(0,3);
-        lcd2004.printf(
-            "General %3d%% %s",
-            ledStrips[3].targetBrightness,
-            callPreset(3, ledStrips[3].preset)
+            "Prestatge %3d%%",
+            ledStrips[1].targetBrightness
         );
 
     } else if (menu == 2) {
@@ -525,9 +507,6 @@ void updateLCD2004(int menu, int menuIndex) {
 // ========================================================
 
 void updateLCD1602(int menu, int menuIndex) {
-
-    notifyLCDActivity();
-
     lcd1602.clear();
 
     if (menu == 0) {

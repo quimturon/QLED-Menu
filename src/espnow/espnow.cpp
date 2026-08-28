@@ -98,48 +98,53 @@ void processEspNowMessages() {
         Serial.printf("📩 ESP-NOW rebut: %s\n", msg.c_str());
         notifyLCDActivity();
 
+        bool isBrightnessCommand =
+            msg.startsWith("+bri") ||
+            msg.startsWith("-bri") ||
+            msg.startsWith("bri");
+
         // ===============================
         // COMANDES GLOBALS
         // ===============================
         if (msg == "toggleAll") {
-            toggleTauleta();
+            toggleParet();
             togglePrestatge();
             debugMsg2 = "Rebut toggleAll...";
         }
     else if (msg == "+briAll") {
-        briPlusTauleta();
+        briPlusParet();
         briPlusPrestatge();
         debugMsg2 = "Rebut +briAll...";
     }
     else if (msg == "-briAll") {
-        briMinusTauleta();
+        briMinusParet();
         briMinusPrestatge();
         debugMsg2 = "Rebut -briAll...";
     }
     else if (msg == "presetAll") {
-        presetTauleta();
+        presetParet();
         presetPrestatge();
         debugMsg2 = "Rebut presetAll...";
     }
 
     // ===============================
-    // TIRA 0 (TAULETA)
+    // TIRA 0 (PARET)
     // ===============================
-    else if (msg == "toggleDespatx") {
-        toggleTauleta();
-        debugMsg2 = "Rebut toggleTauleta...";
+    else if (msg == "toggleParet") {
+        toggleParet();
+        debugMsg2 = "Rebut toggleParet...";
     }
-    else if (msg == "+briDespatx") {
-        briPlusTauleta();
-        debugMsg2 = "Rebut +briTauleta...";
+    else if (msg == "+briParet") {
+        briPlusParet();
+        debugMsg2 = "Rebut +briParet...";
     }
-    else if (msg == "-briDespatx") {
-        briMinusTauleta();
-        debugMsg2 = "Rebut -briTauleta...";
+    else if (msg == "-briParet") {
+        briMinusParet();
+        debugMsg2 = "Rebut -briParet...";
     }
-    else if (msg == "presetDespatx") {
-        presetTauleta();
-        debugMsg2 = "Rebut presetTauleta...";
+    else if (msg == "presetParet") {
+        presetParet();
+        debugMsg2 = "Rebut presetParet...";
     }
 
     // ===============================
@@ -185,7 +190,9 @@ void processEspNowMessages() {
     else {
         Serial.println("⚠️ Comanda desconeguda");
     }
-        sendLedState();
+        if (!isBrightnessCommand) {
+            sendLedState();
+        }
     }
 }
 

@@ -3,8 +3,11 @@
 #include <esp_now.h>
 
 const int NUM_STRIPS = 2;
-#define NUM_LEDS 150
-#define LED_PINS {19, 18}
+#define NUM_LEDS 71
+#define PARET_START 0
+#define PARET_END 34
+#define PRESTATGE_START 35
+#define PRESTATGE_END 70
 
 extern bool reescriure;
 extern uint8_t bri0;
@@ -18,20 +21,65 @@ extern int maxBri;
 extern uint8_t briSteps;
 
 LEDStrip ledStrips[NUM_STRIPS] = {
-    {Adafruit_NeoPixel(150, 19, NEO_GRBW + NEO_KHZ800), 255, 255, 1},
-    {Adafruit_NeoPixel(150, 18, NEO_GRB + NEO_KHZ800), 255, 255, 1}
+    {0, 0, 2, 50},
+    {0, 0, 2, 50}
 };
 
-void setupLEDs() {
-    for(int i=0;i<NUM_STRIPS;i++){
-        ledStrips[i].strip.begin();
-        ledStrips[i].strip.show();
-        ledStrips[i].brightness = 0;
-        ledStrips[i].targetBrightness = 0;
-        ledStrips[i].strip.setBrightness(ledStrips[i].brightness);
-        ledStrips[i].preset = 2;
+Adafruit_NeoPixel ledStrip(NUM_LEDS, 19, NEO_GRBW + NEO_KHZ800);
+
+uint32_t scaleColor(uint8_t red, uint8_t green, uint8_t blue, uint8_t white,
+                    uint8_t brightness) {
+    return ledStrip.Color(
+        (uint16_t)red * brightness / 255,
+        (uint16_t)green * brightness / 255,
+        (uint16_t)blue * brightness / 255,
+        (uint16_t)white * brightness / 255
+    );
+}
+
+void renderZone(int stripIndex, int firstLed, int lastLed, uint16_t hue) {
+    uint8_t brightness = ledStrips[stripIndex].brightness;
+    uint32_t color = 0;
+
+    switch (ledStrips[stripIndex].preset) {
+        case 1:
+            for (int ledIndex = firstLed; ledIndex <= lastLed; ledIndex++) {
+                color = ledStrip.ColorHSV(
+                    (hue + (ledIndex - firstLed) * 65536 / (lastLed - firstLed + 1)) % 65536,
+                    255,
+                    brightness
+                );
+                ledStrip.setPixelColor(ledIndex, color);
+            }
+            return;
+        case 3:
+            color = scaleColor(255, 255, 255, 255, brightness);
+            break;
+        case 4:
+            color = ledStrip.ColorHSV(hue % 65536, 255, brightness);
+            break;
+        case 2:
+        default:
+            color = scaleColor(100, 0, 0, 255, brightness);
+            break;
     }
 
+    for (int ledIndex = firstLed; ledIndex <= lastLed; ledIndex++) {
+        ledStrip.setPixelColor(ledIndex, color);
+    }
+}
+
+void setupLEDs() {
+    ledStrip.begin();
+    ledStrip.setBrightness(255);
+    ledStrip.clear();
+    ledStrip.show();
+
+    for(int i=0;i<NUM_STRIPS;i++){
+        ledStrips[i].brightness = 0;
+        ledStrips[i].targetBrightness = 0;
+        ledStrips[i].preset = 2;
+    }
 }
 
 void LEDTask(void *pvParameters) {
@@ -41,32 +89,10 @@ void LEDTask(void *pvParameters) {
             // Fading de brillantor
             if(ledStrips[s].brightness < ledStrips[s].targetBrightness) ledStrips[s].brightness++;
             else if(ledStrips[s].brightness > ledStrips[s].targetBrightness) ledStrips[s].brightness--;
-            ledStrips[s].strip.setBrightness(ledStrips[s].brightness);
-
-            // Prests
-            switch(ledStrips[s].preset){
-                case 1: // RAINBOW
-                    for(int i=0;i<NUM_LEDS;i++){
-                        uint32_t color = ledStrips[s].strip.ColorHSV((hue+i*65536/NUM_LEDS)%65536,255,255);
-                        ledStrips[s].strip.setPixelColor(i,color);
-                    }
-                    break;
-                case 2: // WARM
-                    for(int i=0;i<NUM_LEDS;i++) ledStrips[s].strip.setPixelColor(i,ledStrips[s].strip.Color(100,0,0,255));
-                    break;
-                case 3: // STATIC
-                    for(int i=0;i<NUM_LEDS;i++) ledStrips[s].strip.setPixelColor(i,ledStrips[s].strip.Color(255,255,255,255));
-                    break;
-                case 4: // COLORCYCLE
-                    static uint16_t hueCycle = 0;
-                    uint32_t color = ledStrips[s].strip.ColorHSV(hueCycle%65536,255,255);
-                    for(int i=0;i<NUM_LEDS;i++) ledStrips[s].strip.setPixelColor(i,color);
-                    hueCycle += 128;
-                    break;
-            }
-
-            ledStrips[s].strip.show();
         }
+        renderZone(0, PARET_START, PARET_END, hue);
+        renderZone(1, PRESTATGE_START, PRESTATGE_END, hue);
+        ledStrip.show();
         hue += 256;
         if (ledStrips[0].brightness != ledStrips[0].targetBrightness) {vTaskDelay(5/portTICK_PERIOD_MS);}
         else {vTaskDelay(5/portTICK_PERIOD_MS);}
@@ -79,7 +105,7 @@ void enviaBrillantor(int stripIndex) {
     sendLedState();
 }
 
-void toggleTauleta() {
+void toggleParet() {
     if(ledStrips[0].targetBrightness == 0) {
             ledStrips[0].targetBrightness = lastBri0;
     } else {
@@ -97,11 +123,11 @@ void togglePrestatge() {
     }
     reescriure = true;
 }
-void briPlusTauleta() {
+void briPlusParet() {
     ledStrips[0].targetBrightness = min(ledStrips[0].targetBrightness + briSteps, maxBri);
     reescriure = true;
 }
-void briMinusTauleta() {
+void briMinusParet() {
     ledStrips[0].targetBrightness = max(ledStrips[0].targetBrightness - briSteps, 5);
     reescriure = true;
 }
@@ -113,7 +139,7 @@ void briMinusPrestatge() {
     ledStrips[1].targetBrightness = max(ledStrips[1].targetBrightness - briSteps, 5);
     reescriure = true;
 }
-void presetTauleta() {
+void presetParet() {
     ledStrips[0].preset += 1;
     if(ledStrips[0].preset > 4) ledStrips[0].preset = 1;
     reescriure = true;
