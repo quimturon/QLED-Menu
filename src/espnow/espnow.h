@@ -20,6 +20,7 @@ void processEspNowMessages();
 
 // Notify the main loop that a received message is user-visible activity.
 void notifyLCDActivity();
+void stopAlarm();
 
 // Callback RX (NO cridar directament)
 void onDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len);

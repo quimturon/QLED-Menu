@@ -51,6 +51,13 @@
 int menu = 0;
 int menuIndex = 0;
 
+int alarmHour = 7;
+int alarmMinute = 0;
+bool alarmEnabled = false;
+bool alarmActive = false;
+uint8_t alarmSavedBri0 = 0;
+uint8_t alarmSavedBri1 = 0;
+
 DateTime lastUpdateOTA;
 DateTime lastUpdateRTC;
 
@@ -109,6 +116,9 @@ const char* firmwareURL =
 #define SSID_ADDR 0
 #define PASS_ADDR 64
 #define VERSION_ADDR 128
+#define ALARM_HOUR_ADDR 144
+#define ALARM_MINUTE_ADDR 145
+#define ALARM_ENABLED_ADDR 146
 
 
 // ========================================================
@@ -341,6 +351,56 @@ void updateOLED(char* buf);
 void debugPrint(const String &msg);
 void notifyLCDActivity();
 void updateLCDBacklight();
+void triggerAlarm();
+void stopAlarm();
+
+void loadAlarmSettings() {
+    EEPROM.begin(EEPROM_SIZE);
+    int storedHour = EEPROM.read(ALARM_HOUR_ADDR);
+    int storedMinute = EEPROM.read(ALARM_MINUTE_ADDR);
+    int storedEnabled = EEPROM.read(ALARM_ENABLED_ADDR);
+
+    if (storedHour >= 0 && storedHour < 24 && storedMinute >= 0 && storedMinute < 60) {
+        alarmHour = storedHour;
+        alarmMinute = storedMinute;
+    }
+    if (storedEnabled == 0 || storedEnabled == 1) {
+        alarmEnabled = storedEnabled == 1;
+    }
+}
+
+void saveAlarmSettings() {
+    EEPROM.begin(EEPROM_SIZE);
+    EEPROM.write(ALARM_HOUR_ADDR, alarmHour);
+    EEPROM.write(ALARM_MINUTE_ADDR, alarmMinute);
+    EEPROM.write(ALARM_ENABLED_ADDR, alarmEnabled ? 1 : 0);
+    EEPROM.commit();
+}
+
+void triggerAlarm() {
+    if (alarmActive) {
+        return;
+    }
+
+    alarmActive = true;
+    alarmSavedBri0 = ledStrips[0].targetBrightness;
+    alarmSavedBri1 = ledStrips[1].targetBrightness;
+    ledStrips[0].targetBrightness = maxBri;
+    ledStrips[1].targetBrightness = maxBri;
+    esp_now_send(controladorAdress, (uint8_t*)"ALARM_ON", strlen("ALARM_ON") + 1);
+    reescriure = true;
+}
+
+void stopAlarm() {
+    if (!alarmActive) {
+        return;
+    }
+
+    alarmActive = false;
+    ledStrips[0].targetBrightness = alarmSavedBri0;
+    ledStrips[1].targetBrightness = alarmSavedBri1;
+    reescriure = true;
+}
 
 
 // ========================================================
@@ -520,6 +580,15 @@ void updateLCD2004(int menu, int menuIndex) {
 
         lcd2004.setCursor(0,2);
         lcd2004.print(buf);
+
+    } else if (menu == 3) {
+
+        lcd2004.setCursor(0,0);
+        lcd2004.printf("Alarma %02d:%02d", alarmHour, alarmMinute);
+        lcd2004.setCursor(0,1);
+        lcd2004.print(alarmEnabled ? "Activada" : "Desactivada");
+        lcd2004.setCursor(0,2);
+        lcd2004.print(alarmActive ? "SONANT" : "Aturada");
     }
 }
 
@@ -545,6 +614,13 @@ void updateLCD1602(int menu, int menuIndex) {
 
         lcd1602.setCursor(6,0);
         lcd1602.print("RTC");
+
+    } else if (menu == 3) {
+        lcd1602.setCursor(4,0);
+        lcd1602.print("Alarma");
+        lcd1602.setCursor(3,1);
+        lcd1602.printf("%02d:%02d %s", alarmHour, alarmMinute,
+                       alarmEnabled ? "ON" : "OFF");
     }
 }
 
@@ -625,6 +701,7 @@ void setup() {
     // ----------------------------------------------------
 
     FW_VERSION = readVersion();
+    loadAlarmSettings();
 
     Serial.print("Versio llegida EEPROM: ");
     Serial.println(FW_VERSION);
@@ -966,6 +1043,10 @@ void loop() {
             now.minute();
 
         reescriure = true;
+
+        if (alarmEnabled && now.hour() == alarmHour && now.minute() == alarmMinute) {
+            triggerAlarm();
+        }
     }
 
 
@@ -991,7 +1072,10 @@ void loop() {
             enc1.readEncoder();
 
 
-        if (delta > 0) {
+        if (menu == 3) {
+            alarmHour = (alarmHour + (delta > 0 ? 1 : 23)) % 24;
+            saveAlarmSettings();
+        } else if (delta > 0) {
 
             ledStrips[0].targetBrightness =
                 min(
@@ -1034,7 +1118,10 @@ void loop() {
             enc2.readEncoder();
 
 
-        if (delta > 0) {
+        if (menu == 3) {
+            alarmMinute = (alarmMinute + (delta > 0 ? 1 : 59)) % 60;
+            saveAlarmSettings();
+        } else if (delta > 0) {
 
             ledStrips[1].targetBrightness =
                 min(
@@ -1248,6 +1335,10 @@ void loop() {
                     "Error NTP"
                 );
             }
+
+        } else if (menu == 3) {
+            alarmEnabled = !alarmEnabled;
+            saveAlarmSettings();
         }
     }
 
@@ -1398,7 +1489,7 @@ void loop() {
 
 
         // Despres de RTC tornem a Firmware
-        if (menu > 2) {
+        if (menu > 3) {
             menu = 0;
         }
 

@@ -13,6 +13,9 @@ extern uint8_t targetBri1;
 extern uint8_t briSteps;
 extern uint8_t controladorAdress[];
 extern RTC_DS3231 rtc;
+extern bool alarmActive;
+extern uint8_t alarmSavedBri0;
+extern uint8_t alarmSavedBri1;
 
 uint8_t remotePreset0 = 2;
 uint8_t remotePreset1 = 2;
@@ -81,6 +84,11 @@ void processEspNowMessages() {
     while (xQueueReceive(messageQueue, &incomingMessage, 0) == pdTRUE) {
         String msg = incomingMessage.text;
         msg.trim();
+
+        if (msg == "ALARM_OFF") {
+            stopAlarm();
+            continue;
+        }
 
         if (msg.startsWith("STATE,")) {
             int values[8];
