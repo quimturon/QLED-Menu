@@ -457,15 +457,26 @@ void updateLCD2004(int menu, int menuIndex) {
 
         lcd2004.setCursor(0,0);
         lcd2004.printf(
-            "Paret %3d%% %s",
-            ledStrips[0].targetBrightness,
-            callPreset(0, ledStrips[0].preset)
+            "Paret %3d%%",
+            ledStrips[0].targetBrightness
         );
 
         lcd2004.setCursor(0,1);
         lcd2004.printf(
+            "Efecte: %s",
+            callPreset(0, ledStrips[0].preset)
+        );
+
+        lcd2004.setCursor(0,2);
+        lcd2004.printf(
             "Prestatge %3d%%",
             ledStrips[1].targetBrightness
+        );
+
+        lcd2004.setCursor(0,3);
+        lcd2004.printf(
+            "Efecte: %s",
+            callPreset(1, ledStrips[1].preset)
         );
 
     } else if (menu == 2) {
@@ -669,12 +680,6 @@ void setup() {
     }
 
 
-    esp_wifi_set_channel(
-        1,
-        WIFI_SECOND_CHAN_NONE
-    );
-
-
     esp_now_peer_info_t peerInfo = {};
 
     memcpy(
@@ -683,7 +688,7 @@ void setup() {
         6
     );
 
-    peerInfo.channel = 1;
+    peerInfo.channel = 0;
     peerInfo.encrypt = false;
 
 
