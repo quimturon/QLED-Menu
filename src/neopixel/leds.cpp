@@ -5,8 +5,8 @@
 const int NUM_STRIPS = 2;
 #define NUM_LEDS 71
 #define PARET_START 0
-#define PARET_END 34
-#define PRESTATGE_START 35
+#define PARET_END 35
+#define PRESTATGE_START 36
 #define PRESTATGE_END 70
 
 extern bool reescriure;
