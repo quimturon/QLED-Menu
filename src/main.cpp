@@ -1158,7 +1158,14 @@ void loop() {
         encVal[2] =
             enc3.readEncoder();
 
+        int delta = enc3.readEncoder();
+        if (delta > 0) {
+            esp_now_send(controladorAdress, (uint8_t*)"+briTauleta", strlen("+briTauleta") + 1);
+        } else if (delta < 0) {
+            esp_now_send(controladorAdress, (uint8_t*)"-briTauleta", strlen("-briTauleta") + 1);
+        }
         encoderMoved = true;
+        enc3.reset();
     }
 
 
@@ -1171,7 +1178,14 @@ void loop() {
         encVal[3] =
             enc4.readEncoder();
 
+        int delta = enc4.readEncoder();
+        if (delta > 0) {
+            esp_now_send(controladorAdress, (uint8_t*)"+briGeneral", strlen("+briGeneral") + 1);
+        } else if (delta < 0) {
+            esp_now_send(controladorAdress, (uint8_t*)"-briGeneral", strlen("-briGeneral") + 1);
+        }
         encoderMoved = true;
+        enc4.reset();
     }
 
 
@@ -1414,12 +1428,12 @@ void loop() {
         } else if (menu == 1) {
 
             debugMsg =
-                "Enviant togglePrestatge...";
+                "Enviant toggleTauleta...";
 
             esp_now_send(
                 controladorAdress,
-                (uint8_t*)"togglePrestatge",
-                strlen("togglePrestatge") + 1
+                (uint8_t*)"toggleTauleta",
+                strlen("toggleTauleta") + 1
             );
 
 
@@ -1452,12 +1466,12 @@ void loop() {
         } else if (menu == 1) {
 
             debugMsg =
-                "Enviant toggleTauleta...";
+                "Enviant toggleGeneral...";
 
             esp_now_send(
                 controladorAdress,
-                (uint8_t*)"toggleTauleta",
-                strlen("toggleTauleta") + 1
+                (uint8_t*)"toggleGeneral",
+                strlen("toggleGeneral") + 1
             );
 
 
@@ -1577,6 +1591,7 @@ void loop() {
             "ENCODER 3 BUTTON PREMUT"
         );
 
+        esp_now_send(controladorAdress, (uint8_t*)"presetTauleta", strlen("presetTauleta") + 1);
         reescriure = true;
     }
 
@@ -1594,6 +1609,7 @@ void loop() {
             "ENCODER 4 BUTTON PREMUT"
         );
 
+        esp_now_send(controladorAdress, (uint8_t*)"presetGeneral", strlen("presetGeneral") + 1);
         reescriure = true;
     }
 
