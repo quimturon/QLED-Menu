@@ -407,6 +407,9 @@ void stopAlarm() {
     alarmActive = false;
     ledStrips[0].targetBrightness = alarmSavedBri0;
     ledStrips[1].targetBrightness = alarmSavedBri1;
+    for (int attempt = 0; attempt < 4; attempt++) {
+        esp_now_send(controladorAdress, (uint8_t*)"ALARM_OFF", strlen("ALARM_OFF") + 1);
+    }
     reescriure = true;
     sendLedState();
 }
@@ -999,6 +1002,28 @@ void loop() {
     static bool initialStateSent = false;
     if (alarmActive && millis() - alarmStartedAt >= 300000UL) {
         stopAlarm();
+    }
+
+    if (alarmActive) {
+        bool alarmInput =
+            digitalRead(BUTTON1) == LOW || digitalRead(BUTTON2) == LOW ||
+            digitalRead(BUTTON3) == LOW || digitalRead(BUTTON4) == LOW ||
+            digitalRead(BUTTON5) == LOW || digitalRead(ENC1_BTN) == LOW ||
+            digitalRead(ENC2_BTN) == LOW || digitalRead(ENC3_BTN) == LOW ||
+            digitalRead(ENC4_BTN) == LOW || enc1.encoderChanged() ||
+            enc2.encoderChanged() || enc3.encoderChanged() ||
+            enc4.encoderChanged() || enc5.encoderChanged();
+
+        if (alarmInput) {
+            enc1.reset();
+            enc2.reset();
+            enc3.reset();
+            enc4.reset();
+            enc5.reset();
+            stopAlarm();
+        }
+
+        return;
     }
 
     static unsigned long lastStateSent = 0;
