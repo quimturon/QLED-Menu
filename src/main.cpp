@@ -392,10 +392,6 @@ void triggerAlarm() {
 }
 
 void stopAlarm() {
-    if (!alarmActive) {
-        return;
-    }
-
     alarmActive = false;
     ledStrips[0].targetBrightness = alarmSavedBri0;
     ledStrips[1].targetBrightness = alarmSavedBri1;
@@ -449,6 +445,10 @@ bool areAllLightsOff() {
         if (ledStrips[stripIndex].targetBrightness != 0) {
             return false;
         }
+    }
+
+    if (bri0 != 0 || bri1 != 0) {
+        return false;
     }
 
     return true;
@@ -554,37 +554,6 @@ void updateLCD2004(int menu, int menuIndex) {
     } else if (menu == 2) {
 
         lcd2004.setCursor(0,0);
-        lcd2004.print("Hora RTC");
-
-        DateTime now = rtc.now();
-
-        char buf[21];
-
-        sprintf(
-            buf,
-            "%02d/%02d/%04d",
-            now.day(),
-            now.month(),
-            now.year()
-        );
-
-        lcd2004.setCursor(0,1);
-        lcd2004.print(buf);
-
-        sprintf(
-            buf,
-            "%02d:%02d:%02d",
-            now.hour(),
-            now.minute(),
-            now.second()
-        );
-
-        lcd2004.setCursor(0,2);
-        lcd2004.print(buf);
-
-    } else if (menu == 3) {
-
-        lcd2004.setCursor(0,0);
         lcd2004.printf("Alarma %02d:%02d", alarmHour, alarmMinute);
         lcd2004.setCursor(0,1);
         lcd2004.print(alarmEnabled ? "Activada" : "Desactivada");
@@ -612,11 +581,6 @@ void updateLCD1602(int menu, int menuIndex) {
         lcd1602.print("Llums");
 
     } else if (menu == 2) {
-
-        lcd1602.setCursor(6,0);
-        lcd1602.print("RTC");
-
-    } else if (menu == 3) {
         lcd1602.setCursor(4,0);
         lcd1602.print("Alarma");
         lcd1602.setCursor(3,1);
@@ -633,6 +597,17 @@ void updateLCD1602(int menu, int menuIndex) {
 void updateOLED(char* buf) {
 
     display.clearDisplay();
+
+    if (areAllLightsOff()) {
+        display.setFont(&FreeMono9pt7b);
+        display.setTextSize(1);
+        display.setCursor(43, 37);
+        display.setTextColor(SSD1306_WHITE);
+        display.print(buf);
+        display.setFont();
+        display.display();
+        return;
+    }
 
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
@@ -1073,7 +1048,7 @@ void loop() {
             enc1.readEncoder();
 
 
-        if (menu == 3) {
+        if (menu == 2) {
             alarmHour = (alarmHour + (delta > 0 ? 1 : 23)) % 24;
             saveAlarmSettings();
         } else if (delta > 0) {
@@ -1119,7 +1094,7 @@ void loop() {
             enc2.readEncoder();
 
 
-        if (menu == 3) {
+        if (menu == 2) {
             alarmMinute = (alarmMinute + (delta > 0 ? 1 : 59)) % 60;
             saveAlarmSettings();
         } else if (delta > 0) {
@@ -1338,31 +1313,6 @@ void loop() {
 
 
         } else if (menu == 2) {
-
-            debugPrint(
-                "Sincronitzant NTP..."
-            );
-
-
-            if (
-                ntpSyncRTC(rtc)
-            ) {
-
-                lastUpdateRTC =
-                    rtc.now();
-
-                debugPrint(
-                    "RTC actualitzat!"
-                );
-
-            } else {
-
-                debugPrint(
-                    "Error NTP"
-                );
-            }
-
-        } else if (menu == 3) {
             alarmEnabled = !alarmEnabled;
             saveAlarmSettings();
         }
@@ -1515,7 +1465,7 @@ void loop() {
 
 
         // Despres de RTC tornem a Firmware
-        if (menu > 3) {
+        if (menu > 2) {
             menu = 0;
         }
 
