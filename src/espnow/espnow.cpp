@@ -4,6 +4,7 @@
 
 extern String debugMsg;
 extern String debugMsg2;
+extern bool reescriure;
 extern uint8_t lastBri0;
 extern uint8_t lastBri1;
 extern uint8_t bri0;
@@ -110,6 +111,17 @@ void processEspNowMessages() {
             msg.startsWith("+bri") ||
             msg.startsWith("-bri") ||
             msg.startsWith("bri");
+
+        if (msg.startsWith("setParet=")) {
+            ledStrips[0].targetBrightness = constrain(msg.substring(10).toInt(), 0, 255);
+            reescriure = true;
+            continue;
+        }
+        if (msg.startsWith("setPrestatge=")) {
+            ledStrips[1].targetBrightness = constrain(msg.substring(14).toInt(), 0, 255);
+            reescriure = true;
+            continue;
+        }
 
         // ===============================
         // COMANDES GLOBALS
