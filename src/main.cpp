@@ -996,12 +996,14 @@ void loop() {
 
     processEspNowMessages();
 
+    static bool initialStateSent = false;
     if (alarmActive && millis() - alarmStartedAt >= 300000UL) {
         stopAlarm();
     }
 
     static unsigned long lastStateSent = 0;
-    if (millis() - lastStateSent >= 30000UL) {
+    if (!initialStateSent || millis() - lastStateSent >= 30000UL) {
+        initialStateSent = true;
         lastStateSent = millis();
         sendLedState();
     }

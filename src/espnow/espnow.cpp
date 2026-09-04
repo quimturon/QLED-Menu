@@ -113,13 +113,15 @@ void processEspNowMessages() {
             msg.startsWith("bri");
 
         if (msg.startsWith("setParet=")) {
-            ledStrips[0].targetBrightness = constrain(msg.substring(10).toInt(), 0, 255);
+            ledStrips[0].targetBrightness = constrain(msg.substring(9).toInt(), 0, 255);
             reescriure = true;
+            sendLedState();
             continue;
         }
         if (msg.startsWith("setPrestatge=")) {
-            ledStrips[1].targetBrightness = constrain(msg.substring(14).toInt(), 0, 255);
+            ledStrips[1].targetBrightness = constrain(msg.substring(13).toInt(), 0, 255);
             reescriure = true;
+            sendLedState();
             continue;
         }
 
