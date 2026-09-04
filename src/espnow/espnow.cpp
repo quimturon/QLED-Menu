@@ -117,16 +117,22 @@ void processEspNowMessages() {
         if (msg == "toggleAll") {
             toggleParet();
             togglePrestatge();
+            esp_now_send(controladorAdress, (const uint8_t*)"toggleTauleta", strlen("toggleTauleta") + 1);
+            esp_now_send(controladorAdress, (const uint8_t*)"toggleGeneral", strlen("toggleGeneral") + 1);
             debugMsg2 = "Rebut toggleAll...";
         }
     else if (msg == "+briAll") {
         briPlusParet();
         briPlusPrestatge();
+        esp_now_send(controladorAdress, (const uint8_t*)"+briTauleta", strlen("+briTauleta") + 1);
+        esp_now_send(controladorAdress, (const uint8_t*)"+briGeneral", strlen("+briGeneral") + 1);
         debugMsg2 = "Rebut +briAll...";
     }
     else if (msg == "-briAll") {
         briMinusParet();
         briMinusPrestatge();
+        esp_now_send(controladorAdress, (const uint8_t*)"-briTauleta", strlen("-briTauleta") + 1);
+        esp_now_send(controladorAdress, (const uint8_t*)"-briGeneral", strlen("-briGeneral") + 1);
         debugMsg2 = "Rebut -briAll...";
     }
     else if (msg == "presetAll") {

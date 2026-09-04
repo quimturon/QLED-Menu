@@ -400,6 +400,7 @@ void stopAlarm() {
     ledStrips[0].targetBrightness = alarmSavedBri0;
     ledStrips[1].targetBrightness = alarmSavedBri1;
     reescriure = true;
+    sendLedState();
 }
 
 
@@ -1198,7 +1199,18 @@ void loop() {
         encVal[4] =
             enc5.readEncoder();
 
+        int delta = enc5.readEncoder();
+        if (delta > 0) {
+            briPlusParet();
+            briPlusPrestatge();
+            esp_now_send(controladorAdress, (uint8_t*)"+briAll", strlen("+briAll") + 1);
+        } else if (delta < 0) {
+            briMinusParet();
+            briMinusPrestatge();
+            esp_now_send(controladorAdress, (uint8_t*)"-briAll", strlen("-briAll") + 1);
+        }
         encoderMoved = true;
+        enc5.reset();
     }
 
 
