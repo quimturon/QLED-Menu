@@ -55,6 +55,7 @@ int alarmHour = 7;
 int alarmMinute = 0;
 bool alarmEnabled = false;
 bool alarmActive = false;
+unsigned long alarmStartedAt = 0;
 uint8_t alarmSavedBri0 = 0;
 uint8_t alarmSavedBri1 = 0;
 
@@ -354,6 +355,14 @@ void updateLCDBacklight();
 void triggerAlarm();
 void stopAlarm();
 
+void sendRemoteBrightness(const char* command, uint8_t brightness) {
+    char message[24];
+    snprintf(message, sizeof(message), "%s=%u", command, brightness);
+    for (int attempt = 0; attempt < 2; attempt++) {
+        esp_now_send(controladorAdress, (uint8_t*)message, strlen(message) + 1);
+    }
+}
+
 void loadAlarmSettings() {
     EEPROM.begin(EEPROM_SIZE);
     int storedHour = EEPROM.read(ALARM_HOUR_ADDR);
@@ -383,6 +392,7 @@ void triggerAlarm() {
     }
 
     alarmActive = true;
+    alarmStartedAt = millis();
     alarmSavedBri0 = ledStrips[0].targetBrightness;
     alarmSavedBri1 = ledStrips[1].targetBrightness;
     ledStrips[0].targetBrightness = maxBri;
@@ -986,6 +996,10 @@ void loop() {
 
     processEspNowMessages();
 
+    if (alarmActive && millis() - alarmStartedAt >= 300000UL) {
+        stopAlarm();
+    }
+
     static unsigned long lastStateSent = 0;
     if (millis() - lastStateSent >= 30000UL) {
         lastStateSent = millis();
@@ -1394,11 +1408,7 @@ void loop() {
             debugMsg =
                 "Enviant toggleTauleta...";
 
-            esp_now_send(
-                controladorAdress,
-                (uint8_t*)"toggleTauleta",
-                strlen("toggleTauleta") + 1
-            );
+            sendRemoteBrightness("setTauleta", bri0 > 0 ? 0 : 255);
 
 
         } else if (menu == 2) {
@@ -1432,11 +1442,7 @@ void loop() {
             debugMsg =
                 "Enviant toggleGeneral...";
 
-            esp_now_send(
-                controladorAdress,
-                (uint8_t*)"toggleGeneral",
-                strlen("toggleGeneral") + 1
-            );
+            sendRemoteBrightness("setGeneral", bri1 > 0 ? 0 : 255);
 
 
         } else if (menu == 2) {

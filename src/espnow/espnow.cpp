@@ -85,7 +85,7 @@ void processEspNowMessages() {
         String msg = incomingMessage.text;
         msg.trim();
 
-        if (msg == "ALARM_OFF") {
+        if (msg == "ALARM_OFF" || msg == "ALARM_STOPPED") {
             stopAlarm();
             continue;
         }
