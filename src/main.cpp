@@ -387,7 +387,9 @@ void triggerAlarm() {
     alarmSavedBri1 = ledStrips[1].targetBrightness;
     ledStrips[0].targetBrightness = maxBri;
     ledStrips[1].targetBrightness = maxBri;
-    esp_now_send(controladorAdress, (uint8_t*)"ALARM_ON", strlen("ALARM_ON") + 1);
+    for (int attempt = 0; attempt < 3; attempt++) {
+        esp_now_send(controladorAdress, (uint8_t*)"ALARM_ON", strlen("ALARM_ON") + 1);
+    }
     reescriure = true;
 }
 
