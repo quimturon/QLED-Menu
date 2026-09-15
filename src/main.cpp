@@ -495,42 +495,17 @@ void updateLCD2004(int menu, int menuIndex) {
     if (menu == 0) {
 
         lcd2004.setCursor(0,0);
-        lcd2004.print("Firmware: ");
-        lcd2004.print(FW_VERSION);
+        lcd2004.printf("1 Firmware       V%s", FW_VERSION.c_str());
 
         lcd2004.setCursor(0,1);
-        lcd2004.printf("MAC%s", WiFi.macAddress().c_str());
+        lcd2004.printf("2 Hora       %02d:%02d", rtc.now().hour(), rtc.now().minute());
 
-        if (needOTA == 1) {
+        lcd2004.setCursor(0,2);
+        lcd2004.printf("3 Alarma     %02d:%02d %s", alarmHour, alarmMinute,
+                       alarmEnabled ? "ON" : "OFF");
 
-            lcd2004.setCursor(0,2);
-            lcd2004.print("Nova versio:");
-            lcd2004.print(NEW_VERSION);
-
-            lcd2004.setCursor(0,3);
-            lcd2004.print("Actualitzant...");
-
-        } else if (needOTA == 2) {
-
-            lcd2004.setCursor(0,2);
-            lcd2004.print("Tot actualitzat el:");
-
-            lcd2004.setCursor(0,3);
-
-            char buf[21];
-
-            sprintf(
-                buf,
-                "%02d/%02d/%04d %02d:%02d",
-                lastUpdateOTA.day(),
-                lastUpdateOTA.month(),
-                lastUpdateOTA.year(),
-                lastUpdateOTA.hour(),
-                lastUpdateOTA.minute()
-            );
-
-            lcd2004.print(buf);
-        }
+        lcd2004.setCursor(0,3);
+        lcd2004.print("4 Configuracio");
 
     } else if (menu == 1) {
 
@@ -566,14 +541,6 @@ void updateLCD2004(int menu, int menuIndex) {
             callPreset(3, remotePreset1)
         );
 
-    } else if (menu == 2) {
-
-        lcd2004.setCursor(0,0);
-        lcd2004.printf("Alarma %02d:%02d", alarmHour, alarmMinute);
-        lcd2004.setCursor(0,1);
-        lcd2004.print(alarmEnabled ? "Activada" : "Desactivada");
-        lcd2004.setCursor(0,2);
-        lcd2004.print(alarmActive ? "SONANT" : "Aturada");
     }
 }
 
@@ -588,19 +555,13 @@ void updateLCD1602(int menu, int menuIndex) {
     if (menu == 0) {
 
         lcd1602.setCursor(4,0);
-        lcd1602.print("Firmware");
+        lcd1602.print("Config");
 
     } else if (menu == 1) {
 
         lcd1602.setCursor(5,0);
         lcd1602.print("Llums");
 
-    } else if (menu == 2) {
-        lcd1602.setCursor(4,0);
-        lcd1602.print("Alarma");
-        lcd1602.setCursor(3,1);
-        lcd1602.printf("%02d:%02d %s", alarmHour, alarmMinute,
-                       alarmEnabled ? "ON" : "OFF");
     }
 }
 
@@ -1091,10 +1052,7 @@ void loop() {
             enc1.readEncoder();
 
 
-        if (menu == 2) {
-            alarmHour = (alarmHour + (delta > 0 ? 1 : 23)) % 24;
-            saveAlarmSettings();
-        } else if (delta > 0) {
+        if (menu == 1 && delta > 0) {
 
             ledStrips[0].targetBrightness =
                 min(
@@ -1103,7 +1061,7 @@ void loop() {
                     maxBri
                 );
 
-        } else if (delta < 0) {
+        } else if (menu == 1 && delta < 0) {
 
             ledStrips[0].targetBrightness =
                 max(
@@ -1114,7 +1072,9 @@ void loop() {
         }
 
 
-        enviaBrillantor(0);
+        if (menu == 1) {
+            enviaBrillantor(0);
+        }
 
         enc1.reset();
 
@@ -1137,10 +1097,7 @@ void loop() {
             enc2.readEncoder();
 
 
-        if (menu == 2) {
-            alarmMinute = (alarmMinute + (delta > 0 ? 1 : 59)) % 60;
-            saveAlarmSettings();
-        } else if (delta > 0) {
+        if (menu == 1 && delta > 0) {
 
             ledStrips[1].targetBrightness =
                 min(
@@ -1149,7 +1106,7 @@ void loop() {
                     maxBri
                 );
 
-        } else if (delta < 0) {
+        } else if (menu == 1 && delta < 0) {
 
             ledStrips[1].targetBrightness =
                 max(
@@ -1160,7 +1117,9 @@ void loop() {
         }
 
 
-        enviaBrillantor(1);
+        if (menu == 1) {
+            enviaBrillantor(1);
+        }
 
         enc2.reset();
 
@@ -1178,9 +1137,17 @@ void loop() {
             enc3.readEncoder();
 
         int delta = enc3.readEncoder();
-        if (delta > 0) {
+        if (menu == 0) {
+            int alarmTotalMinutes = alarmHour * 60 + alarmMinute;
+            alarmTotalMinutes += delta > 0 ? 5 : -5;
+            if (alarmTotalMinutes < 0) alarmTotalMinutes += 24 * 60;
+            if (alarmTotalMinutes >= 24 * 60) alarmTotalMinutes -= 24 * 60;
+            alarmHour = alarmTotalMinutes / 60;
+            alarmMinute = alarmTotalMinutes % 60;
+            saveAlarmSettings();
+        } else if (menu == 1 && delta > 0) {
             esp_now_send(controladorAdress, (uint8_t*)"+briTauleta", strlen("+briTauleta") + 1);
-        } else if (delta < 0) {
+        } else if (menu == 1 && delta < 0) {
             esp_now_send(controladorAdress, (uint8_t*)"-briTauleta", strlen("-briTauleta") + 1);
         }
         encoderMoved = true;
@@ -1198,9 +1165,9 @@ void loop() {
             enc4.readEncoder();
 
         int delta = enc4.readEncoder();
-        if (delta > 0) {
+        if (menu == 1 && delta > 0) {
             esp_now_send(controladorAdress, (uint8_t*)"+briGeneral", strlen("+briGeneral") + 1);
-        } else if (delta < 0) {
+        } else if (menu == 1 && delta < 0) {
             esp_now_send(controladorAdress, (uint8_t*)"-briGeneral", strlen("-briGeneral") + 1);
         }
         encoderMoved = true;
@@ -1218,11 +1185,11 @@ void loop() {
             enc5.readEncoder();
 
         int delta = enc5.readEncoder();
-        if (delta > 0) {
+        if (delta < 0) {
             briPlusParet();
             briPlusPrestatge();
             esp_now_send(controladorAdress, (uint8_t*)"+briAll", strlen("+briAll") + 1);
-        } else if (delta < 0) {
+        } else if (delta > 0) {
             briMinusParet();
             briMinusPrestatge();
             esp_now_send(controladorAdress, (uint8_t*)"-briAll", strlen("-briAll") + 1);
@@ -1289,48 +1256,7 @@ void loop() {
 
 
         if (menu == 0) {
-
-            String newVersion;
-
-            if (
-                checkForUpdate(newVersion)
-            ) {
-
-                Serial.println(
-                    "Nova versio disponible. Inici OTA..."
-                );
-
-                needOTA = 1;
-
-                NEW_VERSION =
-                    newVersion;
-
-                updateLCD2004(
-                    menu,
-                    menuIndex
-                );
-
-                performOTA(
-                    newVersion
-                );
-
-            } else {
-
-                Serial.println(
-                    "Tens la ultima versio."
-                );
-
-                lastUpdateOTA =
-                    rtc.now();
-
-                needOTA = 2;
-
-                updateLCD2004(
-                    menu,
-                    menuIndex
-                );
-            }
-
+            debugMsg = "Opcio Firmware seleccionada";
 
         } else if (menu == 1) {
 
@@ -1355,9 +1281,6 @@ void loop() {
             enviaBrillantor(0);
 
 
-        } else if (menu == 2) {
-            alarmEnabled = !alarmEnabled;
-            saveAlarmSettings();
         }
     }
 
@@ -1377,9 +1300,7 @@ void loop() {
 
 
         if (menu == 0) {
-
-            // Accio firmware
-
+            debugMsg = "Opcio Hora seleccionada";
 
         } else if (menu == 1) {
 
@@ -1404,9 +1325,6 @@ void loop() {
             enviaBrillantor(1);
 
 
-        } else if (menu == 2) {
-
-            // Accio RTC
         }
     }
 
@@ -1426,9 +1344,7 @@ void loop() {
 
 
         if (menu == 0) {
-
-            // Accio firmware
-
+            debugMsg = "Opcio Alarma seleccionada";
 
         } else if (menu == 1) {
 
@@ -1438,9 +1354,6 @@ void loop() {
             sendRemoteBrightness("setTauleta", bri0 > 0 ? 0 : 255);
 
 
-        } else if (menu == 2) {
-
-            // Accio RTC
         }
     }
 
@@ -1460,8 +1373,7 @@ void loop() {
 
 
         if (menu == 0) {
-
-            // Accio firmware
+            debugMsg = "Configuracio seleccionada";
 
 
         } else if (menu == 1) {
@@ -1472,9 +1384,6 @@ void loop() {
             sendRemoteBrightness("setGeneral", bri1 > 0 ? 0 : 255);
 
 
-        } else if (menu == 2) {
-
-            // Accio RTC
         }
     }
 
@@ -1500,7 +1409,7 @@ void loop() {
 
 
         // Despres de RTC tornem a Firmware
-        if (menu > 2) {
+        if (menu > 1) {
             menu = 0;
         }
 
@@ -1529,15 +1438,21 @@ void loop() {
         );
 
 
-        ledStrips[0].preset += 1;
-
-
-        if (
-            ledStrips[0].preset
-            > NUM_PRESETS
-        ) {
-
-            ledStrips[0].preset = 1;
+        if (menu == 0) {
+            String newVersion;
+            if (checkForUpdate(newVersion)) {
+                NEW_VERSION = newVersion;
+                needOTA = 1;
+                performOTA(newVersion);
+            } else {
+                lastUpdateOTA = rtc.now();
+                needOTA = 2;
+            }
+        } else {
+            ledStrips[0].preset += 1;
+            if (ledStrips[0].preset > NUM_PRESETS) {
+                ledStrips[0].preset = 1;
+            }
         }
 
 
@@ -1559,15 +1474,13 @@ void loop() {
         );
 
 
-        ledStrips[1].preset += 1;
-
-
-        if (
-            ledStrips[1].preset
-            > NUM_PRESETS
-        ) {
-
-            ledStrips[1].preset = 1;
+        if (menu == 0) {
+            ntpSyncRTC(rtc);
+        } else {
+            ledStrips[1].preset += 1;
+            if (ledStrips[1].preset > NUM_PRESETS) {
+                ledStrips[1].preset = 1;
+            }
         }
 
 
@@ -1588,7 +1501,12 @@ void loop() {
             "ENCODER 3 BUTTON PREMUT"
         );
 
-        esp_now_send(controladorAdress, (uint8_t*)"presetTauleta", strlen("presetTauleta") + 1);
+        if (menu == 0) {
+            alarmEnabled = !alarmEnabled;
+            saveAlarmSettings();
+        } else {
+            esp_now_send(controladorAdress, (uint8_t*)"presetTauleta", strlen("presetTauleta") + 1);
+        }
         reescriure = true;
     }
 
@@ -1606,7 +1524,9 @@ void loop() {
             "ENCODER 4 BUTTON PREMUT"
         );
 
-        esp_now_send(controladorAdress, (uint8_t*)"presetGeneral", strlen("presetGeneral") + 1);
+        if (menu == 1) {
+            esp_now_send(controladorAdress, (uint8_t*)"presetGeneral", strlen("presetGeneral") + 1);
+        }
         reescriure = true;
     }
 
