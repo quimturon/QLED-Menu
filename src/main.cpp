@@ -495,13 +495,13 @@ void updateLCD2004(int menu, int menuIndex) {
     if (menu == 0) {
 
         lcd2004.setCursor(0,0);
-        lcd2004.printf("1 Firmware   V%s", FW_VERSION.c_str());
+        lcd2004.printf("1 Firmware    V%s", FW_VERSION.c_str());
 
         lcd2004.setCursor(0,1);
-        lcd2004.printf("2 Hora       %02d:%02d", rtc.now().hour(), rtc.now().minute());
+        lcd2004.printf("2 Hora         %02d:%02d", rtc.now().hour(), rtc.now().minute());
 
         lcd2004.setCursor(0,2);
-        lcd2004.printf("3 Alarma  %02d:%02d %s", alarmHour, alarmMinute,alarmEnabled ? "ON" : "OFF");
+        lcd2004.printf("3 Alarma    %02d:%02d %s", alarmHour, alarmMinute,alarmEnabled ? "ON" : "OFF");
 
         lcd2004.setCursor(0,3);
         lcd2004.print("");

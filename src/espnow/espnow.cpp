@@ -107,11 +107,6 @@ void processEspNowMessages() {
         Serial.printf("📩 ESP-NOW rebut: %s\n", msg.c_str());
         notifyLCDActivity();
 
-        bool isBrightnessCommand =
-            msg.startsWith("+bri") ||
-            msg.startsWith("-bri") ||
-            msg.startsWith("bri");
-
         if (msg.startsWith("setParet=")) {
             ledStrips[0].targetBrightness = constrain(msg.substring(9).toInt(), 0, 255);
             reescriure = true;
@@ -218,9 +213,7 @@ void processEspNowMessages() {
     else {
         Serial.println("⚠️ Comanda desconeguda");
     }
-        if (!isBrightnessCommand) {
-            sendLedState();
-        }
+        sendLedState();
     }
 }
 
